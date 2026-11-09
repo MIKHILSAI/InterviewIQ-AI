@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: interviewiq-backend
+    runtime: python
+    region: singapore
+    plan: starter
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: AUTH_DISABLED
+        value: "false"
+      - key: CLERK_JWKS_URL
+        sync: false
+      - key: CLERK_ISSUER
+        sync: false
+      - key: CLERK_AUTHORIZED_PARTIES
+        sync: false
+      - key: STORAGE_BACKEND
+        value: memory
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: interviewiq
+      - key: GNANI_API_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LLM_MODEL_FAST
+        value: claude-3-5-haiku-latest
+      - key: LLM_MODEL_REPORT
+        value: claude-3-5-sonnet-latest
+      - key: MEDIA_DIR
+        value: ./storage/audio
+      - key: MEDIA_TTL_HOURS
+        value: "24"
+      - key: MAX_UPLOAD_MB
+        value: "10"

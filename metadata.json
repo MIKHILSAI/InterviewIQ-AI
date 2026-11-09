@@ -1,0 +1,6 @@
+{
+  "name": "InterviewIQ AI",
+  "description": "Voice-based AI mock interviewer with adaptive follow-ups, speech synthesis, and 5-point rubric evaluation.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

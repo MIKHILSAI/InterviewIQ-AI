@@ -1,0 +1,427 @@
+# InterviewIQ AI: v0 Frontend Prompt Pack
+
+Build the frontend in **7 parts**, each in a separate v0 account. For every part, paste **SHARED CONTEXT (Section B) first, then that part's prompt**. Shared Context is what makes the parts fit together when you merge them.
+
+---
+
+## A. How to use this pack
+
+1. Create a Next.js project locally (`npx create-next-app@latest interviewiq --ts --tailwind --app`), then run `npx shadcn@latest init`.
+2. For each Part N: open a v0 account, paste **Section B + Part N prompt**, generate, then download or copy the files listed under **"Files to copy"**.
+3. **Part 1 owns all shared files** (`lib/*`, `app/layout.tsx`, `app/globals.css`, `middleware.ts`, `components/shared/*`, `components/app-shell/*`, `app/(app)/layout.tsx`). From Parts 2–7 **never copy those files**. Copy only the files listed for that part. If two parts generated the same file, Part 1's version wins.
+4. All `components/ui/*` files are standard shadcn, so they are identical everywhere. Copy any that are missing, or run `npx shadcn@latest add button card badge ...`.
+5. Install dependencies once: `npm i @clerk/nextjs @clerk/themes recharts lucide-react sonner next-themes date-fns`.
+
+**Merge order:** Part 1 → 2 → 3 → 4 → 5 → 6 → 7.
+
+### Environment variables (`.env.local`; also add to each v0 project's Vars panel for preview)
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_USE_MOCK=true
+```
+`NEXT_PUBLIC_USE_MOCK=true` lets the whole UI run on mock data before the FastAPI backend exists. Set it to `false` when the backend is ready.
+
+### Clerk dashboard setup (2 minutes)
+1. Create an application at clerk.com and enable **Email** and **Google** under *User & Authentication → Social connections*.
+2. Copy the publishable and secret keys into `.env.local`.
+3. In *Paths*, set sign-in to `/sign-in`, sign-up to `/sign-up`, and the after-auth URL to `/dashboard`.
+4. If you use Next.js 16, name the middleware file `proxy.ts` instead of `middleware.ts`. The contents are the same.
+
+### Final folder tree (after merging)
+```
+app/
+  layout.tsx                               ← Part 1
+  globals.css                              ← Part 1
+  page.tsx                                 ← Part 2 (landing)
+  not-found.tsx, error.tsx                 ← Part 7
+  (auth)/
+    layout.tsx                             ← Part 2
+    sign-in/[[...sign-in]]/page.tsx        ← Part 2
+    sign-up/[[...sign-up]]/page.tsx        ← Part 2
+  (app)/
+    layout.tsx                             ← Part 1 (sidebar + topbar shell)
+    dashboard/page.tsx                     ← Part 3
+    setup/page.tsx                         ← Part 4
+    results/[sessionId]/page.tsx           ← Part 6
+    history/page.tsx                       ← Part 7
+    loading.tsx                            ← Part 7
+  (interview)/
+    layout.tsx                             ← Part 5 (immersive, no sidebar)
+    session/[sessionId]/page.tsx           ← Part 5
+middleware.ts (or proxy.ts)                ← Part 1 (project root)
+lib/ types.ts, constants.ts, utils.ts, api.ts, mock-data.ts   ← Part 1
+hooks/ use-audio-recorder.ts, use-audio-player.ts              ← Part 5
+components/
+  ui/*                                     ← shadcn
+  shared/ logo, voice-orb, score-ring, score-badge, stat-card, page-header, empty-state, config-badges   ← Part 1
+  app-shell/ sidebar.tsx, topbar.tsx, mobile-nav.tsx, theme-toggle.tsx                                   ← Part 1
+  landing/*                                ← Part 2
+  auth/auth-brand-panel.tsx                ← Part 2
+  dashboard/*                              ← Part 3
+  setup/*                                  ← Part 4
+  session/*                                ← Part 5
+  results/*                                ← Part 6
+  history/*                                ← Part 7
+```
+
+---
+
+## B. SHARED CONTEXT (paste at the TOP of every part's prompt)
+
+````
+=== SHARED CONTEXT: INTERVIEWIQ AI (do not deviate; this project is built in parts by different people and merged) ===
+
+PRODUCT
+InterviewIQ AI is a voice-based AI mock interviewer for students and job seekers. The candidate picks an interview type, the AI interviewer SPEAKS a question (Gnani Timbre text-to-speech), the candidate answers by voice, the answer is transcribed (Gnani Prisma speech-to-text), evaluated against a rubric, and an adaptive follow-up question is spoken back. At the end the candidate gets a scored performance report. Build FRONTEND ONLY. A separate FastAPI backend exists; every data call goes through lib/api.ts.
+
+STACK (fixed)
+Next.js App Router + TypeScript (strict), Tailwind CSS, shadcn/ui, lucide-react icons, Recharts, sonner (toasts), next-themes (dark/light), date-fns, Clerk (@clerk/nextjs, @clerk/themes). No other UI libraries. Use "use client" only where needed. Import alias "@/".
+
+DESIGN SYSTEM (use semantic Tailwind tokens like bg-background, text-muted-foreground, bg-primary, border-border; NEVER hardcode hex colors inside components)
+- Font: Inter via next/font (var --font-sans). Also load Noto Sans Tamil (--font-tamil) and Noto Sans Devanagari (--font-hindi) so Tamil/Hindi transcript text renders correctly.
+- Tokens in app/globals.css (HSL shadcn variables), light + dark. Dark mode is DEFAULT (class strategy via next-themes, defaultTheme="dark").
+  Light: background #F8FAFC, foreground #0F172A, card #FFFFFF, border #E2E8F0, muted #F1F5F9, muted-foreground #64748B
+  Dark:  background #0B1020, foreground #E5E7EB, card #121832, border #1F2847, muted #171F3D, muted-foreground #94A3B8
+  primary #4F46E5 (indigo-600) with primary-foreground #FFFFFF; accent #14B8A6 (teal); success #16A34A; warning #F59E0B; destructive #DC2626. Add --success and --warning as tokens and use them as text-success / bg-success/10 etc.
+- Radius 0.75rem. Cards: rounded-2xl, 1px border, subtle shadow, p-5/p-6. Buttons: rounded-xl. Generous whitespace, clear hierarchy.
+- Signature gradient (for hero, brand panel, primary CTAs): from-indigo-600 via-violet-600 to-fuchsia-500 as the utility class "bg-brand-gradient" defined in globals.css.
+- Fully responsive (mobile-first, test at 375px, 768px, 1280px). Accessible: labels, aria-labels on icon buttons, visible focus rings, color is never the only signal.
+- Tone: encouraging, professional, student-friendly. Microcopy is short and human.
+
+ROUTES (fixed)
+/ landing (public) | /sign-in, /sign-up (public, Clerk) | /dashboard | /setup | /session/[sessionId] (interview room) | /results/[sessionId] | /history
+
+SHARED TYPES: lib/types.ts (create EXACTLY this content if the file does not exist; import from "@/lib/types", never redefine)
+export type InterviewType = 'technical' | 'hr' | 'mixed'
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced'
+export type Language = 'en' | 'ta' | 'hi'
+export type SessionStatus = 'in_progress' | 'completed' | 'abandoned'
+export interface InterviewConfig { type: InterviewType; domain: string; difficulty: Difficulty; durationMin: 5 | 10 | 15; language: Language }
+export interface Question { id: string; text: string; audioUrl?: string | null; topic?: string; isFollowUp: boolean; index: number }
+export interface RubricScores { technicalCorrectness: number; conceptualUnderstanding: number; completeness: number; relevance: number; communicationClarity: number } // each 0-100
+export interface AnswerEvaluation { overall: number; scores: RubricScores; strengths: string[]; improvements: string[]; missingConcepts: string[]; modelAnswer?: string }
+export interface TranscriptTurn { id: string; role: 'interviewer' | 'candidate'; text: string; timestamp: string }
+export interface StartSessionResponse { sessionId: string; firstQuestion: Question; config: InterviewConfig; startedAt: string }
+export interface SubmitAnswerResponse { transcript: string; evaluation: AnswerEvaluation; nextQuestion: Question | null; isComplete: boolean }
+export interface QuestionResult { question: Question; transcript: string; evaluation: AnswerEvaluation }
+export interface TopicScore { topic: string; score: number }
+export interface StudyPlanItem { topic: string; reason: string; suggestedQuestions: string[] }
+export interface InterviewReport { sessionId: string; config: InterviewConfig; startedAt: string; completedAt: string; durationSec: number; overallScore: number; scores: RubricScores; topicScores: TopicScore[]; strengths: string[]; weaknesses: string[]; results: QuestionResult[]; studyPlan: StudyPlanItem[]; summaryFeedback: string; summaryAudioUrl?: string | null }
+export interface SessionSummary { sessionId: string; config: InterviewConfig; startedAt: string; status: SessionStatus; overallScore: number | null; durationSec: number }
+export interface DashboardStats { totalInterviews: number; avgScore: number; bestScore: number; practiceMinutes: number; streakDays: number; trend: { date: string; score: number }[]; weakTopics: TopicScore[] }
+
+SHARED CONSTANTS: lib/constants.ts (create if missing)
+- RUBRIC_WEIGHTS = { technicalCorrectness: 0.35, conceptualUnderstanding: 0.25, completeness: 0.20, relevance: 0.10, communicationClarity: 0.10 }
+- RUBRIC_LABELS = human labels for the five keys (Technical correctness, Conceptual understanding, Completeness, Relevance, Communication clarity)
+- TECHNICAL_DOMAINS = ['Python','Java','JavaScript','SQL','DBMS','Operating Systems','Computer Networks','Data Structures & Algorithms','OOP','System Design','Machine Learning']
+- HR_DOMAINS = ['Self Introduction','Behavioural','Situational','Strengths & Weaknesses','Career Goals']
+- LANGUAGES = [{ value:'en', label:'English', native:'English', enabled:true }, { value:'ta', label:'Tamil', native:'தமிழ்', enabled:true }, { value:'hi', label:'Hindi', native:'हिन्दी', enabled:false }]
+- DURATIONS = [{min:5, approxQuestions:'3-4'}, {min:10, approxQuestions:'6-8'}, {min:15, approxQuestions:'10-12'}]
+- SESSION_STORAGE_KEY = (id: string) => `iq:session:${id}`
+
+SHARED HELPERS: lib/utils.ts exports cn, formatDuration(sec) → "4m 12s", formatDate(iso) → "09 Nov 2026", scoreTone(score) → 'success' (>=75) | 'warning' (50-74) | 'destructive' (<50), scoreLabel(score) → 'Excellent' (>=85) | 'Good' (70-84) | 'Fair' (50-69) | 'Needs work'.
+
+API CLIENT: lib/api.ts (create if missing; every page uses it, never raw fetch)
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000'; const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true'
+All functions take an optional last arg `token?: string` (Clerk JWT) sent as `Authorization: Bearer <token>`. When USE_MOCK is true they return data from lib/mock-data.ts after a 600-1800ms delay. Signatures:
+- startSession(config: InterviewConfig, token?) → StartSessionResponse         POST /api/sessions
+- submitAnswer(sessionId: string, questionId: string, audio: Blob, token?) → SubmitAnswerResponse   POST /api/sessions/{id}/answer (multipart: questionId, audio)
+- endSession(sessionId: string, token?) → { sessionId: string }               POST /api/sessions/{id}/end
+- getReport(sessionId: string, token?) → InterviewReport                      GET /api/sessions/{id}/report
+- listSessions(token?) → SessionSummary[]                                     GET /api/sessions
+- getStats(token?) → DashboardStats                                           GET /api/stats
+Throw an ApiError(status, message) on non-2xx. Get the token in components with: const { getToken } = useAuth(); const token = (await getToken()) ?? undefined.
+
+MOCK DATA: lib/mock-data.ts exports mockStats, mockSessions (6 realistic sessions, mix of types/domains/scores, one in_progress), mockQuestionPool (adaptive-looking Python/SQL/OS questions incl. follow-ups), and mockReport(sessionId) returning a full realistic InterviewReport (5 question results, topic scores, study plan). Mock submitAnswer returns the next question from the pool and isComplete=true after 4 answers. audioUrl is null in mock mode.
+
+SESSION HAND-OFF (Setup page → Interview room): after startSession succeeds, the Setup page saves JSON { config, firstQuestion, startedAt } to sessionStorage under SESSION_STORAGE_KEY(sessionId) and navigates to /session/{sessionId}. The room reads it from there (if missing → redirect to /setup).
+
+SHARED COMPONENTS (owned by Part 1; if missing in your project, create a minimal version at the same path with the same props, and mark it with a "// STUB: replaced by Part 1" comment)
+- components/shared/logo.tsx            <Logo size?: 'sm'|'md'|'lg' showText?: boolean />  (gradient rounded square with lucide AudioLines/Mic icon + "InterviewIQ" wordmark with "AI" in primary)
+- components/shared/voice-orb.tsx       <VoiceOrb state: 'idle'|'speaking'|'listening'|'thinking' size?: number />  (animated gradient orb; pulsing rings when speaking, ripple when listening, slow spin when thinking; CSS animations only; respects prefers-reduced-motion)
+- components/shared/score-ring.tsx      <ScoreRing score: number size?: number strokeWidth?: number label?: string />  (SVG circular gauge, color from scoreTone, animated stroke on mount)
+- components/shared/score-badge.tsx     <ScoreBadge score: number />  (pill showing "78" + scoreLabel, tone colored)
+- components/shared/stat-card.tsx       <StatCard label value icon hint? />
+- components/shared/page-header.tsx     <PageHeader title description? actions? />
+- components/shared/empty-state.tsx     <EmptyState icon title description action? />
+- components/shared/config-badges.tsx   <ConfigBadges config: InterviewConfig />  (type, domain, difficulty, language as small badges)
+APP SHELL: (app)/layout.tsx wraps pages in a left sidebar (Dashboard, New Interview, History) + top bar (Clerk <UserButton />, theme toggle). Pages in the (app) group render ONLY their own content inside <main>; they must not render their own sidebar/navbar. For preview purposes in your own project you may create a temporary (app)/layout.tsx; it will be discarded on merge.
+
+SCOPE RULE: Implement ONLY the part described below. Do not rewrite shared files owned by Part 1 except to create stubs when missing. Every component must handle loading (skeletons), empty and error states.
+=== END SHARED CONTEXT ===
+````
+
+---
+
+## C. PART 1: Foundation, theme, Clerk wiring, app shell
+
+**Paste into: Account 1.** This is the project skeleton. Merge it first.
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 1 TASK: Build the project foundation, design system, Clerk wiring, shared library files, shared components and the authenticated app shell. There are no feature pages in this part except a placeholder /dashboard that renders <PageHeader title="Dashboard" /> so the shell can be previewed.
+
+1. app/layout.tsx
+   - Server layout wrapped in <ClerkProvider> with `appearance={{ variables: { colorPrimary: '#4F46E5', borderRadius: '0.75rem' } }}`.
+   - Fonts: Inter, Noto Sans Tamil, Noto Sans Devanagari via next/font/google, exposed as CSS variables on <html>.
+   - next-themes ThemeProvider (attribute="class", defaultTheme="dark", enableSystem=false), sonner <Toaster richColors position="top-right" />.
+   - Metadata: title "InterviewIQ AI: Practice interviews you can talk through", description, theme color.
+2. app/globals.css: all design tokens from the Shared Context (light + dark), the "bg-brand-gradient" utility, keyframes for the VoiceOrb (pulse-ring, ripple, spin-slow), a "print" block that hides the sidebar/topbar and `.no-print` elements and forces a white background (used later for PDF export), and `@media (prefers-reduced-motion)` fallbacks.
+3. middleware.ts (project root): use clerkMiddleware + createRouteMatcher. Public routes: '/', '/sign-in(.*)', '/sign-up(.*)'. Everything else calls `await auth.protect()`. If process.env.CLERK_SECRET_KEY is missing, simply `return NextResponse.next()` so the v0 preview still works. Standard matcher config that skips _next and static files, and always runs for /api and /trpc.
+4. lib/types.ts, lib/constants.ts, lib/utils.ts, lib/api.ts, lib/mock-data.ts: implement EXACTLY as specified in the Shared Context. In api.ts include a small `request<T>()` helper handling JSON + multipart, the ApiError class, and the mock branches. In mock-data.ts write rich, realistic content (real-sounding Python/SQL/OS questions and answers, helpful improvement tips, study plan items).
+5. components/shared/*: implement all eight shared components exactly with the props in the Shared Context. Make them polished: VoiceOrb with layered gradient + glow, ScoreRing with animated stroke and the score in the center (text-3xl font-semibold) plus scoreLabel underneath.
+6. components/app-shell/: sidebar.tsx (collapsible on desktop, 256px wide; Logo at top; nav links Dashboard /dashboard, New Interview /setup, History /history with lucide icons and active-state highlight; a small "Powered by Gnani Prisma + Timbre" card at the bottom), topbar.tsx (page-agnostic: left = mobile menu button, right = "New interview" primary button, theme toggle, Clerk <UserButton afterSignOutUrl="/" />), mobile-nav.tsx (shadcn Sheet with the same nav), theme-toggle.tsx (sun/moon dropdown: Light, Dark).
+7. app/(app)/layout.tsx: composes Sidebar + Topbar + <main className="mx-auto w-full max-w-7xl p-4 md:p-8">{children}</main>.
+8. app/(app)/dashboard/page.tsx: placeholder only, as described above.
+9. Make sure all of these shadcn/ui components are present in components/ui: button, card, badge, input, label, select, tabs, dialog, alert-dialog, accordion, progress, skeleton, tooltip, sheet, separator, table, switch, textarea, dropdown-menu, scroll-area, toggle-group, radio-group, avatar, sonner.
+
+Make the sidebar and topbar look premium: subtle borders, backdrop blur on the topbar, smooth hover states.
+````
+
+**Files to copy (all):** `app/layout.tsx`, `app/globals.css`, `middleware.ts`, `app/(app)/layout.tsx`, `lib/*`, `components/shared/*`, `components/app-shell/*`, `components/ui/*`
+
+---
+
+## D. PART 2: Landing page + Clerk Sign-in / Sign-up (Google login)
+
+**Paste into: Account 2.**
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 2 TASK: Build the public landing page and the Clerk authentication pages with Google login. Make these the most visually impressive screens of the product.
+
+A. app/page.tsx (public landing; compose from components/landing/*)
+Sections, in order:
+1. Sticky navbar (components/landing/navbar.tsx): Logo, anchor links (How it works, Features, Languages, FAQ), theme toggle, and auth buttons. Use Clerk's <SignedOut> to show "Sign in" (ghost, links to /sign-in) + "Get started free" (gradient, links to /sign-up), and <SignedIn> to show a "Go to dashboard" button + <UserButton />. Mobile: hamburger Sheet.
+2. Hero (hero.tsx): bg-brand-gradient soft radial glow background, small pill "Powered by Gnani Prisma + Timbre", H1 "Practice interviews you can actually talk through.", subcopy "An AI interviewer that speaks, listens, asks smart follow-ups and scores your answers. Built for placements and tech interviews.", two CTAs (Start practicing free → /sign-up, See how it works → #how-it-works), and trust line "Technical • HR • English & Tamil". Right side: a CSS-built mock of the interview room (a card with the VoiceOrb in "speaking" state, a caption bubble "Can you explain the difference between a process and a thread?", an animated waveform made of 24 bars with staggered CSS animation, and a candidate bubble). Add subtle floating score chips ("Technical 85", "Clarity 70") around it.
+3. Stats strip (stats.tsx): 3 to 4 compact stats (e.g. "Adaptive follow-ups", "5-point rubric scoring", "2 languages", "Instant PDF report") as illustrative capability highlights, not fake user counts.
+4. How it works (how-it-works.tsx, id="how-it-works"): 4 numbered steps with icons: 1 Configure your interview, 2 Listen & answer by voice, 3 Get adaptive follow-ups, 4 Review your report.
+5. Features grid (features.tsx, id="features"): 6 cards: Voice-first interviews, Adaptive questioning, Rubric-based scoring, Multilingual (English & Tamil), Personalised study plan, Downloadable report.
+6. Adaptive demo (adaptive-demo.tsx): a two-column section. Left: copy explaining that questions change based on your previous answer. Right: a chat-style transcript showing AI question → candidate answer → AI follow-up ("You mentioned shared memory. What happens if two threads modify the same variable at once?") with a "Follow-up" badge on the AI's second turn.
+7. Scoring preview (scoring-preview.tsx): shows the five rubric parameters with their weights (35/25/20/10/10) as horizontal bars, next to a ScoreRing sample "78 / Good".
+8. Languages (languages.tsx, id="languages"): cards for English, Tamil (தமிழ்), Hindi (marked "Coming soon").
+9. FAQ (faq.tsx, id="faq"): shadcn Accordion with 6 Q&As (Is it free? Which browsers support the microphone? Are my recordings stored? How is my score calculated? Can I practice in Tamil? Do I need to install anything?).
+10. Final CTA band with the gradient, and a footer (footer.tsx) with Logo, links and "© 2026 InterviewIQ AI".
+Add subtle scroll-reveal (CSS only or IntersectionObserver), no heavy animation libraries.
+
+B. Authentication pages
+1. app/(auth)/layout.tsx: a full-height 2-column grid. Left column (hidden below lg): <AuthBrandPanel /> from components/auth/auth-brand-panel.tsx, with bg-brand-gradient, the Logo in white, a large VoiceOrb, headline "Your next interview starts here.", 3 benefit bullets with check icons (Voice-based mock interviews, Instant rubric feedback, Tamil, English & Hindi support), and a small quote card. Right column: centered content on bg-background, with a "← Back to home" link at the top-left and the page content centered (max-w-md).
+2. app/(auth)/sign-in/[[...sign-in]]/page.tsx: "use client". Render Clerk's <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/dashboard" appearance={...} />. Above it show <ClerkLoading> skeleton (a card-shaped skeleton) and wrap the form in <ClerkLoaded>.
+3. app/(auth)/sign-up/[[...sign-up]]/page.tsx: same with <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl="/dashboard" />.
+4. Clerk appearance (create a shared helper components/auth/clerk-appearance.ts exporting `getClerkAppearance(isDark: boolean)`): use `baseTheme: dark` from @clerk/themes when dark (read theme via next-themes' useTheme), `variables` { colorPrimary: '#4F46E5', borderRadius: '0.75rem', fontFamily: 'var(--font-sans)' }, `layout: { socialButtonsPlacement: 'top', socialButtonsVariant: 'blockButton', shimmer: true }`, and `elements`: rootBox "w-full", card "shadow-none bg-transparent border-0 p-0", headerTitle "text-2xl font-semibold", headerSubtitle "text-muted-foreground", socialButtonsBlockButton "h-11 rounded-xl border border-border bg-card hover:bg-muted", formButtonPrimary "h-11 rounded-xl bg-brand-gradient text-white hover:opacity-90 shadow-none", formFieldInput "h-11 rounded-xl bg-background border-border", footerActionLink "text-primary font-medium", dividerLine "bg-border". Hide Clerk's "Development mode" clutter only through styling, not by removing required footer elements.
+5. Make Google the hero action: it must appear first as a full-width "Continue with Google" button above the email form, with an "or" divider (Clerk renders this automatically once Google is enabled in the dashboard; style it as above).
+6. Page headings above the Clerk card: sign-in "Welcome back" / "Sign in to continue practicing", sign-up "Create your account" / "Start your first AI interview in under a minute".
+
+Do not modify layout.tsx at the root or the middleware.
+````
+
+**Files to copy:** `app/page.tsx`, `app/(auth)/**`, `components/landing/*`, `components/auth/*`
+
+---
+
+## E. PART 3: Dashboard
+
+**Paste into: Account 3.**
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 3 TASK: Build the authenticated Dashboard at app/(app)/dashboard/page.tsx and its components in components/dashboard/*. It renders inside the existing app shell (do not draw a sidebar/navbar). Use "use client" and load data with getStats() and listSessions() from lib/api.ts (token via Clerk useAuth). Load both in parallel with Promise.all and show skeletons while loading.
+
+Layout (top to bottom):
+1. Greeting header (welcome-header.tsx): "Welcome back, {firstName} 👋" using Clerk useUser(); subtitle "Ready for your next practice round?"; on the right a primary gradient button "Start new interview" → /setup. Show a motivating line based on stats (e.g. streak: "🔥 {n}-day streak. Keep going!").
+2. Stat cards row (4 cards, use StatCard): Total interviews, Average score (with ScoreBadge), Best score, Practice time (minutes). Responsive: 1 col mobile, 2 on md, 4 on xl.
+3. Two-column grid (lg:grid-cols-3):
+   - Left (col-span-2) score-trend-chart.tsx: Recharts AreaChart/LineChart of stats.trend (date vs score, y-axis 0–100), gradient fill using the primary color via CSS variables, custom tooltip, a reference line at 75 labeled "Target". Include a small segmented toggle "Last 7 / Last 30 interviews" (client-side slice).
+   - Right weak-topics-card.tsx: "Focus areas" listing stats.weakTopics as rows with a Progress bar, the score, and a small "Practice" link button that goes to /setup?domain={topic}&type=technical.
+4. Quick start (quick-start.tsx): a row of 4 preset cards (e.g. "Python • Intermediate", "SQL • Beginner", "Operating Systems • Intermediate", "HR • Behavioural"). Each has an icon, a one-line description, estimated 10 min, and links to /setup?type=...&domain=...&difficulty=...
+5. Recent interviews (recent-sessions.tsx): the 5 most recent sessions from listSessions as a clean list. Each row: domain + type, ConfigBadges, date (formatDate), duration, ScoreBadge (or an "In progress" badge when status is in_progress/abandoned), chevron; completed rows link to /results/{sessionId}. Header has a "View all" link → /history.
+6. Empty state (when totalInterviews is 0): hide charts, show a large EmptyState with a VoiceOrb, text "No interviews yet. Your first one takes under 10 minutes.", and a CTA to /setup, followed by the quick-start presets.
+7. Error state: a card with "Couldn't load your dashboard" and a Retry button; also fire a sonner error toast.
+
+Polish: staggered fade-in on cards, hover lift on preset cards, numbers formatted nicely, all text uses semantic tokens so dark and light both look great.
+````
+
+**Files to copy:** `app/(app)/dashboard/page.tsx`, `components/dashboard/*`
+
+---
+
+## F. PART 4: Interview Setup
+
+**Paste into: Account 4.**
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 4 TASK: Build the interview configuration page at app/(app)/setup/page.tsx with components in components/setup/*. Renders inside the app shell. "use client".
+
+Page layout: PageHeader "Set up your interview" / "Choose what you want to practice. We'll tailor the questions and follow-ups to you." Two columns on lg: left (col-span-2) the form as 5 numbered step cards, right a sticky summary + mic-check column.
+
+Form steps (state kept in one InterviewConfig-shaped state object):
+1. Interview type (type-selector.tsx): 3 large selectable cards (radio semantics, keyboard accessible): Technical (Code icon, "Concepts, problem solving and follow-ups"), HR (Users icon, "Behavioural and situational questions"), Mixed (Shuffle icon, "Both, like a real placement round"). Selected card gets primary border, tinted bg and a check icon.
+2. Domain (domain-selector.tsx): a grid of selectable chips from TECHNICAL_DOMAINS when type is technical, HR_DOMAINS when hr, both groups (with group labels) when mixed. Selecting a chip highlights it. For mixed, allow ONE technical domain and ONE HR focus; store the technical domain in config.domain and show "+ HR" implicitly. If the domain no longer matches after a type change, reset it.
+3. Difficulty (difficulty-selector.tsx): segmented control with 3 options, each with a one-line description (Beginner: "Core definitions and simple examples", Intermediate: "Applied concepts and trade-offs", Advanced: "Edge cases, design and depth").
+4. Duration (duration-selector.tsx): 3 radio cards (5, 10, 15 minutes) showing approxQuestions from DURATIONS ("≈ 3-4 questions").
+5. Language (language-selector.tsx): cards for each item in LANGUAGES showing native script; Hindi is disabled with a "Soon" badge. When Tamil is chosen show an info note "Speak naturally. Tamil and Tamil-English mixed speech is supported."
+
+Right column:
+- summary-card.tsx: live "Your interview" summary (type, domain, difficulty, duration, language, estimated questions), a checklist of missing selections (shows "Pick a domain" if unset), and the primary gradient "Start interview" button (disabled until the config is valid). While submitting show a spinner and "Preparing your interviewer…".
+- mic-check.tsx: "Check your microphone" card. Button "Test microphone" calls navigator.mediaDevices.getUserMedia({ audio: true }), shows a live level meter (AudioContext + AnalyserNode, 12-bar meter) and statuses: not tested / listening / working ✓ / permission denied (with browser-specific help text and a retry button) / no microphone found. Always stop the stream tracks on unmount and when the test ends (auto-stop after 8 seconds). Also show a tips list: "Use headphones", "Find a quiet place", "Speak at a normal pace".
+
+Behaviour:
+- Read optional query params to pre-fill: /setup?type=technical&domain=Python&difficulty=intermediate&duration=10&language=en (validate each value, ignore invalid ones; use useSearchParams inside a component wrapped by Suspense).
+- Defaults: type technical, difficulty intermediate, duration 10, language en, domain unset.
+- On submit: const token = await getToken(); call startSession(config, token). On success, save { config, firstQuestion, startedAt } to sessionStorage under SESSION_STORAGE_KEY(sessionId), then router.push(`/session/${sessionId}`). On failure show a sonner error toast ("Couldn't start the interview. Please try again.") and keep the form state.
+- Also warn (non-blocking inline alert) if the browser lacks MediaRecorder support.
+
+Polish: smooth selection transitions, clear focus states, mobile layout stacks with the summary card at the bottom as a sticky action bar showing the Start button.
+````
+
+**Files to copy:** `app/(app)/setup/page.tsx`, `components/setup/*`
+
+---
+
+## G. PART 5: Interview Room (core voice experience)
+
+**Paste into: Account 5.** This is the most important part.
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 5 TASK: Build the live voice interview room. This page is immersive: it must NOT use the sidebar shell.
+
+Files:
+- app/(interview)/layout.tsx: minimal layout, full-height bg-background with a subtle radial gradient, no sidebar. Just {children}.
+- app/(interview)/session/[sessionId]/page.tsx: "use client" page composing the components below.
+- hooks/use-audio-recorder.ts
+- hooks/use-audio-player.ts
+- components/session/* (listed below)
+
+1. HOOK useAudioRecorder()
+   Returns { status: 'idle'|'requesting'|'recording'|'stopped'|'error', error?: string, durationMs, level (0..1 live input level), blob: Blob | null, start(), stop(), reset(), analyser: AnalyserNode | null }.
+   - Request the mic with getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).
+   - Choose the mimeType using MediaRecorder.isTypeSupported in this order: 'audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'. Collect chunks, build the Blob on stop.
+   - Level meter via AudioContext + AnalyserNode (requestAnimationFrame), update level ~30fps.
+   - Auto-stop at 120 seconds. Clean up tracks, AudioContext and rAF on stop/unmount. Map errors to friendly messages (NotAllowedError → "Microphone access was blocked", NotFoundError → "No microphone found").
+2. HOOK useAudioPlayer()
+   Returns { speak(text: string, audioUrl?: string | null, lang: Language): Promise<void>, stop(), isSpeaking, error }.
+   - If audioUrl exists, play it with an HTMLAudioElement and resolve when it ends.
+   - If audioUrl is null/missing or fails to load, FALL BACK to window.speechSynthesis (voice lang en-IN for 'en', ta-IN for 'ta', hi-IN for 'hi') so the demo works even without the TTS backend. Resolve on end. Handle autoplay restrictions by catching play() rejections and returning a flag so the UI can show a "Tap to play question" button.
+3. PAGE LOGIC (state machine)
+   phase: 'intro' | 'asking' | 'ready' | 'recording' | 'review' | 'processing' | 'finishing' | 'error'.
+   - On mount read sessionStorage[SESSION_STORAGE_KEY(sessionId)] → { config, firstQuestion, startedAt }. If missing, toast and router.replace('/setup').
+   - 'intro': a centered card "Ready when you are" with the interview summary (ConfigBadges), a mic permission check (request permission here), tips, and a big "Begin interview" button. The click is the user gesture that unlocks audio playback.
+   - 'asking': the interviewer speaks the current question (useAudioPlayer.speak). The VoiceOrb is in 'speaking' state; question text shown as live captions. A "Skip audio" ghost button and "Replay question" button are available. When finished → 'ready'.
+   - 'ready': VoiceOrb 'idle'; a prominent circular mic button "Tap to answer" (spacebar also toggles).
+   - 'recording': orb 'listening', live waveform (<Waveform /> driven by analyser/level), elapsed timer, "Tap to stop" (a red stop button; Space/Enter also stop). Minimum 1.5 s recording; if shorter, toast "That was too short. Try again." and reset.
+   - 'review': after stopping, show an audio preview (HTMLAudioElement from the blob URL) with buttons "Re-record" (secondary) and "Submit answer" (primary).
+   - 'processing': orb 'thinking'; a 3-step progress stepper that advances on a timer while the request is in flight: "Transcribing your answer (Prisma)…" → "Evaluating…" → "Preparing the next question…". Call submitAnswer(sessionId, currentQuestion.id, blob, token).
+   - On success: append the candidate turn (res.transcript) to the transcript; if res.isComplete or !res.nextQuestion → phase 'finishing'; else set currentQuestion = res.nextQuestion, append an interviewer turn, store per-answer evaluation in a ref (for the optional live feedback toggle), go to 'asking'.
+   - 'finishing': full-screen "Wrapping up… generating your report" with a thinking orb; call endSession(sessionId, token), clear the sessionStorage entry, then router.push(`/results/${sessionId}`).
+   - 'error': friendly card with Retry (resubmit the same blob) and "End interview" actions. Never lose the recorded blob on network errors.
+   - Timer: countdown from config.durationMin shown in the top bar. When it reaches 0, show a toast "Time's up. Finish your current answer" and mark `timeUp`; after the current answer is submitted, go to 'finishing' even if the API returns another question. Turn the timer text warning-colored under 60 s.
+   - "End interview" button (top bar) opens an AlertDialog ("End interview early? Your answers so far will still be scored."); confirm → 'finishing'.
+   - Warn on tab close during an active interview using a beforeunload handler.
+4. COMPONENTS in components/session/
+   - session-topbar.tsx: Logo (sm), ConfigBadges, question counter "Question 3" with progress dots, countdown timer, "End interview" button.
+   - interviewer-panel.tsx: large VoiceOrb centered, status label under it ("Interviewer is speaking…", "Your turn", "Listening…", "Thinking…"), the current question in large readable text (use the Tamil/Hindi font class when config.language is ta/hi), and a "Follow-up" badge with a sparkle icon when question.isFollowUp is true.
+   - waveform.tsx: canvas or div-bar waveform driven by `level` / the analyser, 40 bars, smooth.
+   - record-controls.tsx: the mic/stop/re-record/submit control cluster with keyboard hint "Press Space".
+   - transcript-panel.tsx: right-hand panel (on mobile, a bottom Sheet opened from a "Transcript" button) with chat bubbles (interviewer left, candidate right), auto-scroll to latest, timestamps, and a "Live feedback" Switch (off by default) that, when on, shows each answer's overall score and one improvement tip under the candidate bubble.
+   - processing-stepper.tsx: the 3-step animated stepper.
+   - intro-card.tsx: the pre-interview card.
+   Layout: desktop = two columns (main stage ~65% with interviewer + controls, transcript ~35%); mobile = single column with the transcript in a Sheet.
+5. Accessibility and resilience: aria-live="polite" region announcing phase changes, focus management on the main action button, reduced-motion support, handle `visibilitychange` (pause nothing, but stop the player if the user leaves).
+
+Everything must work in mock mode: with audioUrl null the browser speech synthesis speaks the questions, and the mock submitAnswer returns the next question.
+````
+
+**Files to copy:** `app/(interview)/**`, `hooks/*`, `components/session/*`
+
+---
+
+## H. PART 6: Results / Performance Report
+
+**Paste into: Account 6.**
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 6 TASK: Build the results page at app/(app)/results/[sessionId]/page.tsx with components in components/results/*. Renders inside the app shell. "use client". Load with getReport(sessionId, token); skeleton while loading; if the API returns 404 show an EmptyState "Report not found" with a button to /dashboard; for other errors show an error card with Retry. Wrap the printable report in a container with id="report" so print CSS applies; mark interactive buttons with the class "no-print".
+
+Sections (top to bottom):
+1. report-header.tsx: Left: "Interview report" title, ConfigBadges, date, duration (formatDuration). Right (class no-print): buttons "Download PDF" (calls window.print(); the print stylesheet already exists in globals.css), "Listen to summary" (plays report.summaryAudioUrl if present, otherwise uses window.speechSynthesis to read summaryFeedback; toggles to a Stop state), "Retake" (→ /setup with the same config as query params), and "Dashboard".
+2. overall-score-card.tsx: a hero card with a large <ScoreRing size={180} />, scoreLabel, and the AI summaryFeedback paragraph. Beside it a 2x2 mini grid: Questions answered, Avg. per question, Strongest area, Weakest area (derived from topicScores).
+3. rubric-breakdown.tsx: the five rubric parameters as rows: label, weight chip (e.g. "35%") from RUBRIC_WEIGHTS, a colored Progress bar (tone via scoreTone) and the score. Next to it a Recharts RadarChart of the 5 rubric scores (domain 0–100) using theme colors.
+4. topic-chart.tsx: Recharts horizontal BarChart of topicScores, bars colored by score tone, with value labels.
+5. strengths-weaknesses.tsx: two cards side by side: "What went well" (success-tinted, check icons) and "Needs improvement" (warning-tinted, alert icons), from report.strengths / report.weaknesses.
+6. question-review.tsx: shadcn Accordion, one item per QuestionResult. Trigger shows "Q{index+1}", the question text (truncated), a Follow-up badge if isFollowUp, and a ScoreBadge. Content shows: full question, "Your answer" (transcript in a quote block; use the Tamil/Hindi font class if config.language requires), five mini score pills (rubric keys), "Strengths" and "Improve" lists, "Missing concepts" as outline badges, and a collapsible "Model answer" block (if modelAnswer exists) with a "Listen" icon button using speechSynthesis.
+7. study-plan.tsx: "Your preparation plan" grid of cards from report.studyPlan: topic, reason, 3 suggested practice questions (list), and a "Practice this topic" button → /setup?domain={topic}&type=technical&difficulty=... Add a numbered priority badge on each card.
+8. Footer CTA band (no-print): "Ready for another round?" with Start new interview and View history buttons.
+
+Print stylesheet expectations: when printing, hide no-print elements, expand ALL accordion items (use a `data-print-expand` approach or render a print-only flat list of the question reviews with class "hidden print:block"), avoid page breaks inside cards (break-inside-avoid), and show a print-only header "InterviewIQ AI Performance Report" with the date.
+
+Polish: the ScoreRing animates on mount, charts animate once, cards fade in.
+````
+
+**Files to copy:** `app/(app)/results/[sessionId]/page.tsx`, `components/results/*`
+
+---
+
+## I. PART 7: History + loading/error/not-found states + polish
+
+**Paste into: Account 7.**
+
+````
+[PASTE SHARED CONTEXT HERE]
+
+PART 7 TASK: Build the interview history page, plus global loading, error and not-found screens.
+
+1. app/(app)/history/page.tsx + components/history/*. Renders inside the app shell. "use client". Load listSessions(token).
+   - PageHeader "Interview history" / "Every session you've practiced, in one place." with a "New interview" button.
+   - filters-bar.tsx: search input (matches domain), Select for type (All/Technical/HR/Mixed), Select for status (All/Completed/In progress/Abandoned), Select for sort (Newest, Oldest, Highest score, Lowest score). All client-side, state in the URL query string (useSearchParams + router.replace) so filters survive refresh.
+   - sessions-table.tsx: on md+ a shadcn Table with columns: Date, Domain, Type, Difficulty, Language, Duration, Status, Score, and a chevron. On mobile render the same data as stacked cards (session-card.tsx). Completed rows are clickable → /results/{sessionId} (whole row + keyboard accessible). In-progress/abandoned rows show a muted status badge and a "Not scored" label, not clickable.
+   - Client-side pagination, 10 per page, with Previous/Next and "Showing X–Y of Z".
+   - summary-strip.tsx above the table: 3 small stats computed from the filtered list (count, average score, best score).
+   - Empty states: no sessions at all (EmptyState with CTA to /setup), no results for the filters (EmptyState with a "Clear filters" button). Loading skeleton rows (8). Error card with Retry.
+2. app/(app)/loading.tsx: a generic page skeleton (header skeleton + 4 stat skeleton cards + 2 large block skeletons) used as the Suspense fallback for all (app) routes.
+3. app/not-found.tsx: friendly 404 with a VoiceOrb in 'idle' state, "We couldn't find that page", buttons Home (/) and Dashboard (/dashboard).
+4. app/error.tsx ("use client", receives error and reset): friendly error screen with a "Try again" button calling reset(), a Dashboard link, and the error digest in small muted text.
+5. Accessibility pass on your own pages: table has a caption (sr-only), buttons have aria-labels, rows are keyboard focusable with visible focus rings.
+
+Do not change the app shell or shared files.
+````
+
+**Files to copy:** `app/(app)/history/page.tsx`, `app/(app)/loading.tsx`, `app/not-found.tsx`, `app/error.tsx`, `components/history/*`
+
+---
+
+## J. After merging: integration checklist
+
+1. `npm run dev`, with `NEXT_PUBLIC_USE_MOCK=true`. Walk through: landing → sign up with Google → dashboard → setup → room (use the mic) → results → history.
+2. Fix import mismatches. They will be rare because every part used the same types and paths. Run `npx tsc --noEmit` and fix anything it reports.
+3. Remove any `// STUB` files that Part 1's version replaces.
+4. Flip `NEXT_PUBLIC_USE_MOCK=false` once the FastAPI backend is up.
+
+### Backend contract the frontend expects (for the FastAPI step)
+
+| Method | Path | Request | Response |
+|---|---|---|---|
+| POST | `/api/sessions` | JSON `InterviewConfig` | `StartSessionResponse` (first question + Timbre `audioUrl`) |
+| POST | `/api/sessions/{id}/answer` | multipart: `questionId`, `audio` (webm/mp4) | `SubmitAnswerResponse` (Prisma transcript, rubric evaluation, adaptive next question + Timbre `audioUrl`) |
+| POST | `/api/sessions/{id}/end` | none | `{ sessionId }` |
+| GET | `/api/sessions/{id}/report` | none | `InterviewReport` |
+| GET | `/api/sessions` | none | `SessionSummary[]` |
+| GET | `/api/stats` | none | `DashboardStats` |
+
+- Every request carries `Authorization: Bearer <Clerk JWT>`. Verify it in FastAPI using Clerk's JWKS.
+- Enable CORS for `http://localhost:3000` and your Vercel domain.
+- `audioUrl` can be a static URL or a data URL. When it is `null`, the frontend falls back to browser speech synthesis.
