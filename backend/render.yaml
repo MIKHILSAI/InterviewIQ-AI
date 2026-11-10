@@ -15,7 +15,7 @@ services:
       - key: PUBLIC_BASE_URL
         sync: false
       - key: CORS_ORIGINS
-        sync: false
+        value: https://interview-iq-ai-eta.vercel.app
       - key: AUTH_DISABLED
         value: "false"
       - key: CLERK_JWKS_URL
