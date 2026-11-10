@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     # Core
     APP_ENV: str = "dev"
     PUBLIC_BASE_URL: str = "http://localhost:8000"
-    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    CORS_ORIGINS: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "https://interview-iq-ai-eta.vercel.app"
+    )
 
     # Authentication
     AUTH_DISABLED: bool = False
