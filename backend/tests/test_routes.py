@@ -47,6 +47,21 @@ def test_health_route():
     assert_camel_case_keys(data)
 
 
+def test_resume_profile_cors_preflight():
+    res = client.options(
+        "/api/resume/profile",
+        headers={
+            "Origin": "https://interview-iq-ai-eta.vercel.app",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+
+    assert res.status_code == 200
+    assert res.headers["access-control-allow-origin"] == "https://interview-iq-ai-eta.vercel.app"
+    assert res.headers["access-control-allow-credentials"] == "true"
+
+
 def test_hindi_session_creation(monkeypatch):
     class FakeEngine:
         last_resume_profile = None
